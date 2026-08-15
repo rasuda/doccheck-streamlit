@@ -158,7 +158,7 @@ if signature and signature != st.session_state.upload_signature:
     st.session_state.upload_signature = signature
 
 if uploaded_files:
-    st.success(f"{len(uploaded_files)} documento(s) carregado(s) com sucesso.", icon="✓")
+    st.success(f"{len(uploaded_files)} documento(s) carregado(s) com sucesso.", icon="✅")
     cols = st.columns(min(len(uploaded_files), 3))
     for index, file in enumerate(uploaded_files):
         with cols[index % len(cols)]:
@@ -243,4 +243,3 @@ if st.session_state.report_ready and can_compare:
     if st.button("Fazer nova comparação", use_container_width=True):
         st.session_state.report_ready = False
         st.rerun()
-
