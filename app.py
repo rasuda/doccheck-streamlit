@@ -16,18 +16,17 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background: #f7f9fc; }
     [data-testid="stHeader"] { background: transparent; }
     .block-container { max-width: 1180px; padding-top: 2rem; padding-bottom: 4rem; }
     .brand { font-size: .78rem; font-weight: 800; letter-spacing: .14em; color: #3165d4; }
     .hero-title { font-size: clamp(2rem, 5vw, 3.7rem); line-height: 1.04; font-weight: 800; color: #10213e; margin: .45rem 0 .7rem; }
     .hero-copy { max-width: 760px; font-size: 1.08rem; color: #5d6b82; margin-bottom: 1.4rem; }
-    .soft-card { background: white; border: 1px solid #e5eaf2; border-radius: 18px; padding: 1.15rem 1.3rem; box-shadow: 0 8px 28px rgba(29, 55, 90, .06); }
+    .soft-card { background: #ffffff; color: #262730; border: 1px solid #e5eaf2; border-radius: 18px; padding: 1.15rem 1.3rem; box-shadow: 0 8px 28px rgba(29, 55, 90, .06); }
     .step { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eaf1ff; color: #3165d4; font-weight: 800; margin-right: .45rem; }
     .doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; color: #233655; }
     .muted { color: #748197; font-size: .88rem; }
     .severity-high { color: #a92727; background: #ffeded; border-radius: 999px; padding: .2rem .55rem; font-weight: 700; }
-    div[data-testid="stMetric"] { background: white; border: 1px solid #e5eaf2; padding: 1rem; border-radius: 16px; }
+    div[data-testid="stMetric"] { background: #ffffff; color: #262730; border: 1px solid #e5eaf2; padding: 1rem; border-radius: 16px; }
     .stButton > button { border-radius: 11px; font-weight: 700; min-height: 44px; }
     .stDownloadButton > button { border-radius: 11px; font-weight: 700; }
     </style>
