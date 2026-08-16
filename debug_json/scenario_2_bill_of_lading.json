@@ -1,0 +1,23 @@
+{
+  "document_type":"Bill of Lading","summary":"Bill of Lading fictício MGLSZX26081601 com peso bruto divergente de 1,005.00 kg.","fields":[
+    {"canonical_key":"bill_of_lading_number","field_name":"Número do B/L","value":"MGLSZX26081601","normalized_value":"MGLSZX26081601","category":"Referência","confidence":100,"source_text":"B/L No. MGLSZX26081601","priority":false},
+    {"canonical_key":"shipper_name","field_name":"Exportador","value":"Meridian Components Ltd.","normalized_value":"MERIDIAN COMPONENTS LTD","category":"Partes","confidence":100,"source_text":"Meridian Components Ltd.","priority":true},
+    {"canonical_key":"shipper_address","field_name":"Endereço do exportador","value":"88 Harbor Way, Shenzhen 518000, China","normalized_value":"88 HARBOR WAY SHENZHEN 518000 CHINA","category":"Partes","confidence":100,"source_text":"88 Harbor Way, Shenzhen 518000, China","priority":false},
+    {"canonical_key":"shipper_tax_id","field_name":"Tax ID do exportador","value":"CN-TEST-884201","normalized_value":"CN-TEST-884201","category":"Partes","confidence":100,"source_text":"Tax ID: CN-TEST-884201","priority":true},
+    {"canonical_key":"consignee_name","field_name":"Consignatário","value":"Aurora Home Brasil Ltda.","normalized_value":"AURORA HOME BRASIL LTDA","category":"Partes","confidence":100,"source_text":"Aurora Home Brasil Ltda.","priority":true},
+    {"canonical_key":"consignee_address","field_name":"Endereço do consignatário","value":"Av. das Nacoes, 1000 - Sao Paulo - SP - Brazil","normalized_value":"AV DAS NACOES 1000 SAO PAULO SP BRAZIL","category":"Partes","confidence":100,"source_text":"Av. das Nacoes, 1000 - Sao Paulo - SP - Brazil","priority":false},
+    {"canonical_key":"consignee_tax_id","field_name":"CNPJ do consignatário","value":"00.000.000/0001-00","normalized_value":"00000000000100","category":"Partes","confidence":100,"source_text":"CNPJ: 00.000.000/0001-00","priority":true},
+    {"canonical_key":"notify_party","field_name":"Notify Party","value":"Same as consignee","normalized_value":"SAME AS CONSIGNEE","category":"Partes","confidence":100,"source_text":"Same as consignee","priority":false},
+    {"canonical_key":"vessel_voyage","field_name":"Navio e viagem","value":"MV Pacific Sample / 0826E","normalized_value":"MV PACIFIC SAMPLE|0826E","category":"Transporte","confidence":100,"source_text":"Vessel / voyage: MV Pacific Sample / 0826E","priority":false},
+    {"canonical_key":"booking_number","field_name":"Booking","value":"BK-SZX-2026-4408","normalized_value":"BK-SZX-2026-4408","category":"Referência","confidence":100,"source_text":"Booking: BK-SZX-2026-4408","priority":false},
+    {"canonical_key":"port_of_loading","field_name":"Porto de embarque","value":"Yantian, China","normalized_value":"YANTIAN CHINA","category":"Rota","confidence":100,"source_text":"Port of loading: Yantian, China","priority":true},
+    {"canonical_key":"port_of_discharge","field_name":"Porto de descarga","value":"Santos, Brazil","normalized_value":"SANTOS BRAZIL","category":"Rota","confidence":100,"source_text":"Port of discharge: Santos, Brazil","priority":true},
+    {"canonical_key":"container_number","field_name":"Número do contêiner","value":"TSTU1234567","normalized_value":"TSTU1234567","category":"Carga","confidence":100,"source_text":"TSTU1234567","priority":true},
+    {"canonical_key":"seal_number","field_name":"Número do lacre","value":"SAMPLE98765","normalized_value":"SAMPLE98765","category":"Carga","confidence":100,"source_text":"SAMPLE98765","priority":true},
+    {"canonical_key":"total_packages","field_name":"Total de volumes","value":"15 CARTONS","normalized_value":"15|CARTONS","category":"Carga","confidence":100,"source_text":"15 CARTONS","priority":true},
+    {"canonical_key":"net_weight","field_name":"Peso líquido","value":"940.00 KG","normalized_value":"940.00|KG","category":"Carga","confidence":100,"source_text":"940.00 KG","priority":true},
+    {"canonical_key":"gross_weight","field_name":"Peso bruto","value":"1,005.00 KG","normalized_value":"1005.00|KG","category":"Carga","confidence":100,"source_text":"1,005.00 KG","priority":true},
+    {"canonical_key":"commercial_invoice_number","field_name":"Referência da Commercial Invoice","value":"CI-2026-0816","normalized_value":"CI-2026-0816","category":"Referência","confidence":100,"source_text":"Invoice reference: CI-2026-0816","priority":true},
+    {"canonical_key":"purchase_order","field_name":"Pedido de compra","value":"PO-BR-4408","normalized_value":"PO-BR-4408","category":"Referência","confidence":100,"source_text":"Purchase order: PO-BR-4408","priority":true}
+  ],"warnings":[]
+}
