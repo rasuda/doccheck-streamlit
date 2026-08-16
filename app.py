@@ -1,5 +1,6 @@
 import base64, hashlib, json, re, time, unicodedata
 from collections import defaultdict
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 from google import genai
@@ -60,23 +61,34 @@ def compare(raw):
         status="Somente informativo" if len(present)<2 else ("Consistente" if len(set(present))==1 else "Divergente")
         rows.append({"Prioritário":"Sim" if priorities[k] else "Não","Campo":labels[k],"Commercial Invoice":shown["invoice"],"Packing List":shown["packing"],"Bill of Lading":shown["bl"],"Status":status,"Confiança mínima":f"{min(conf)}%"})
     return pd.DataFrame(sorted(rows,key=lambda x:({"Divergente":0,"Consistente":1,"Somente informativo":2}[x["Status"]],x["Prioritário"]!="Sim")))
-def reset():st.session_state.results=None
+def reset():
+    st.session_state.results=None
+    st.session_state.debug_mode=False
 
-if "auth" not in st.session_state:st.session_state.auth=False
 if "results" not in st.session_state:st.session_state.results=None
 if "sig" not in st.session_state:st.session_state.sig=None
-@st.dialog("Acessar o DocCheck",dismissible=False)
-def login():
-    with st.form("login"):
-        u=st.text_input("Usuário");p=st.text_input("Senha",type="password")
-        if st.form_submit_button("Entrar",use_container_width=True):
-            if u.strip() and p.strip():st.session_state.auth=True;st.rerun()
-            else:st.error("Preencha usuário e senha. Qualquer combinação é válida.")
-if not st.session_state.auth:
-    login();st.markdown('<div class="brand">DOCCHECK</div><div class="title">Conferência documental com IA</div>',unsafe_allow_html=True);st.stop()
+if "debug_mode" not in st.session_state:st.session_state.debug_mode=False
 
 st.markdown('<div class="brand">DOCCHECK • IMPORT REVIEW</div><div class="title">Conferência de importação</div><p class="copy">Envie Commercial Invoice, Packing List e Bill of Lading. O sistema extrai todos os campos e destaca as divergências prioritárias.</p>',unsafe_allow_html=True)
 st.info("POC: use documentos fictícios ou autorizados e confirme o resultado manualmente.")
+st.subheader("Modo de depuração")
+st.caption("Executa a comparação usando os três JSONs do repositório. Não chama o Gemini e não consome tokens.")
+if st.button("Iniciar comparação — modo debug",type="primary",use_container_width=True):
+    try:
+        base=Path(__file__).parent/"debug_json"
+        paths={"invoice":base/"scenario_2_commercial_invoice.json","packing":base/"scenario_2_packing_list.json","bl":base/"scenario_2_bill_of_lading.json"}
+        with st.status("Carregando dados de debug…",expanded=True) as status:
+            time.sleep(1)
+            loaded={key:Extraction.model_validate(json.loads(path.read_text(encoding="utf-8"))).model_dump() for key,path in paths.items()}
+            st.write("Validando os três documentos…")
+            st.session_state.results=loaded
+            st.session_state.debug_mode=True
+            status.update(label="Comparação de debug concluída",state="complete",expanded=False)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Não foi possível carregar os JSONs de debug: {e}")
+st.divider()
+st.subheader("Modo com IA")
 key=api_key()
 if not key:st.warning("Configure GEMINI_API_KEY nos Secrets do Streamlit Cloud.")
 cols=st.columns(3);files={}
@@ -95,8 +107,10 @@ if st.button("Iniciar comparação",type="primary",use_container_width=True,disa
             st.write("Comparando campos…");st.session_state.results=out;st.session_state.sig=signature(files);s.update(label="Conferência concluída",state="complete")
         st.rerun()
     except Exception as e:st.error(f"Não foi possível concluir: {e}")
-if ready and st.session_state.results and signature(files)==st.session_state.sig:
+show_results=st.session_state.results and (st.session_state.debug_mode or (ready and signature(files)==st.session_state.sig))
+if show_results:
     raw=st.session_state.results;report=compare(raw);div=report[report.Status=="Divergente"]
+    if st.session_state.debug_mode:st.info("Resultado gerado em modo debug, sem consumo de tokens do Gemini.")
     st.divider();a,b,c,d=st.columns(4);a.metric("Documentos",3);b.metric("Campos",len(report));c.metric("Divergências",len(div));d.metric("Prioritárias",len(div[div["Prioritário"]=="Sim"]))
     if div.empty:
         st.success("Nenhuma divergência encontrada.")
