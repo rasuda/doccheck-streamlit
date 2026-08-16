@@ -1,0 +1,28 @@
+{
+  "document_type": "Commercial Invoice",
+  "summary": "Fatura comercial fictícia CI-2026-0816, total USD 4,350.00 e 300 peças.",
+  "fields": [
+    {"canonical_key":"commercial_invoice_number","field_name":"Número da fatura","value":"CI-2026-0816","normalized_value":"CI-2026-0816","category":"Referência","confidence":100,"source_text":"Invoice No. CI-2026-0816","priority":true},
+    {"canonical_key":"shipper_name","field_name":"Exportador","value":"Meridian Components Ltd.","normalized_value":"MERIDIAN COMPONENTS LTD","category":"Partes","confidence":100,"source_text":"Meridian Components Ltd.","priority":true},
+    {"canonical_key":"shipper_address","field_name":"Endereço do exportador","value":"88 Harbor Way, Shenzhen 518000, China","normalized_value":"88 HARBOR WAY SHENZHEN 518000 CHINA","category":"Partes","confidence":100,"source_text":"88 Harbor Way, Shenzhen 518000, China","priority":false},
+    {"canonical_key":"shipper_tax_id","field_name":"Tax ID do exportador","value":"CN-TEST-884201","normalized_value":"CN-TEST-884201","category":"Partes","confidence":100,"source_text":"Tax ID: CN-TEST-884201","priority":true},
+    {"canonical_key":"consignee_name","field_name":"Importador","value":"Aurora Home Brasil Ltda.","normalized_value":"AURORA HOME BRASIL LTDA","category":"Partes","confidence":100,"source_text":"Aurora Home Brasil Ltda.","priority":true},
+    {"canonical_key":"consignee_address","field_name":"Endereço do importador","value":"Av. das Nacoes, 1000 - Sao Paulo - SP - Brazil","normalized_value":"AV DAS NACOES 1000 SAO PAULO SP BRAZIL","category":"Partes","confidence":100,"source_text":"Av. das Nacoes, 1000 - Sao Paulo - SP - Brazil","priority":false},
+    {"canonical_key":"consignee_tax_id","field_name":"CNPJ do importador","value":"00.000.000/0001-00","normalized_value":"00000000000100","category":"Partes","confidence":100,"source_text":"CNPJ: 00.000.000/0001-00","priority":true},
+    {"canonical_key":"invoice_date","field_name":"Data da fatura","value":"10 Aug 2026","normalized_value":"2026-08-10","category":"Datas","confidence":100,"source_text":"Invoice date: 10 Aug 2026","priority":false},
+    {"canonical_key":"purchase_order","field_name":"Pedido de compra","value":"PO-BR-4408","normalized_value":"PO-BR-4408","category":"Referência","confidence":100,"source_text":"Purchase order: PO-BR-4408","priority":true},
+    {"canonical_key":"incoterm","field_name":"Incoterm","value":"FOB Shenzhen - Incoterms 2020","normalized_value":"FOB SHENZHEN","category":"Comercial","confidence":100,"source_text":"Incoterm: FOB Shenzhen - Incoterms 2020","priority":false},
+    {"canonical_key":"currency","field_name":"Moeda","value":"USD","normalized_value":"USD","category":"Comercial","confidence":100,"source_text":"Currency: USD","priority":false},
+    {"canonical_key":"item_code","field_name":"Código do item","value":"LUX-20","normalized_value":"LUX-20","category":"Itens","confidence":100,"source_text":"LUX-20","priority":true},
+    {"canonical_key":"item_quantity","field_name":"Quantidade do item LUX-20","value":"200","normalized_value":"LUX-20|200","category":"Itens","confidence":100,"source_text":"LUX-20 ... QTY 200 PCS","priority":true},
+    {"canonical_key":"item_code","field_name":"Código do item","value":"RM-20","normalized_value":"RM-20","category":"Itens","confidence":100,"source_text":"RM-20","priority":true},
+    {"canonical_key":"item_quantity","field_name":"Quantidade do item RM-20","value":"100","normalized_value":"RM-20|100","category":"Itens","confidence":100,"source_text":"RM-20 ... QTY 100 PCS","priority":true},
+    {"canonical_key":"total_quantity","field_name":"Quantidade total","value":"300 PCS","normalized_value":"300|PCS","category":"Totais","confidence":100,"source_text":"TOTAL QUANTITY 300 PCS","priority":true},
+    {"canonical_key":"total_invoice_value","field_name":"Valor total da fatura","value":"USD 4,350.00","normalized_value":"USD|4350.00","category":"Totais","confidence":100,"source_text":"TOTAL INVOICE VALUE USD 4,350.00","priority":false},
+    {"canonical_key":"country_of_origin","field_name":"País de origem","value":"China","normalized_value":"CHINA","category":"Logística","confidence":100,"source_text":"Country of origin: China","priority":false},
+    {"canonical_key":"port_of_loading","field_name":"Porto de embarque","value":"Yantian, China","normalized_value":"YANTIAN CHINA","category":"Logística","confidence":100,"source_text":"Port of loading: Yantian, China","priority":true},
+    {"canonical_key":"port_of_discharge","field_name":"Porto de descarga","value":"Santos, Brazil","normalized_value":"SANTOS BRAZIL","category":"Logística","confidence":100,"source_text":"Port of discharge: Santos, Brazil","priority":true},
+    {"canonical_key":"payment_terms","field_name":"Condição de pagamento","value":"30 days from invoice date","normalized_value":"30 DAYS FROM INVOICE DATE","category":"Comercial","confidence":100,"source_text":"Payment terms: 30 days from invoice date","priority":false}
+  ],
+  "warnings": []
+}
