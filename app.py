@@ -1,17 +1,15 @@
-import io
-import time
+import base64
+import json
 
 import pandas as pd
 import streamlit as st
+from google import genai
+from pydantic import BaseModel, Field
 
 
-st.set_page_config(
-    page_title="DocCheck | Comparação inteligente",
-    page_icon="🔎",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+MODEL_ID = "gemini-3.7-flash"
 
+st.set_page_config(page_title="DocCheck | Extração inteligente", page_icon="🔎", layout="wide")
 
 st.markdown(
     """
@@ -19,91 +17,94 @@ st.markdown(
     [data-testid="stHeader"] { background: transparent; }
     .block-container { max-width: 1180px; padding-top: 2rem; padding-bottom: 4rem; }
     .brand { font-size: .78rem; font-weight: 800; letter-spacing: .14em; color: #3165d4; }
-    .hero-title { font-size: clamp(2rem, 5vw, 3.7rem); line-height: 1.04; font-weight: 800; color: #10213e; margin: .45rem 0 .7rem; }
-    .hero-copy { max-width: 760px; font-size: 1.08rem; color: #5d6b82; margin-bottom: 1.4rem; }
-    .soft-card { background: #ffffff; color: #262730; border: 1px solid #e5eaf2; border-radius: 18px; padding: 1.15rem 1.3rem; box-shadow: 0 8px 28px rgba(29, 55, 90, .06); }
+    .hero-title { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.04; font-weight: 800; color: #10213e; margin: .45rem 0 .7rem; }
+    .hero-copy { max-width: 780px; font-size: 1.08rem; color: #5d6b82; margin-bottom: 1.4rem; }
     .step { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eaf1ff; color: #3165d4; font-weight: 800; margin-right: .45rem; }
-    .doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; color: #233655; }
-    .muted { color: #748197; font-size: .88rem; }
-    .severity-high { color: #a92727; background: #ffeded; border-radius: 999px; padding: .2rem .55rem; font-weight: 700; }
     div[data-testid="stMetric"] { background: #ffffff; color: #262730; border: 1px solid #e5eaf2; padding: 1rem; border-radius: 16px; }
     .stButton > button { border-radius: 11px; font-weight: 700; min-height: 44px; }
-    .stDownloadButton > button { border-radius: 11px; font-weight: 700; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-def reset_report() -> None:
-    st.session_state.report_ready = False
+class ExtractedField(BaseModel):
+    field_name: str = Field(description="Nome claro do campo, em português")
+    value: str = Field(description="Valor exatamente como aparece no documento")
+    normalized_value: str | None = Field(default=None, description="Valor padronizado, sem alterar o significado")
+    category: str = Field(description="Categoria do campo")
+    confidence: int = Field(ge=0, le=100, description="Confiança estimada da leitura")
+    source_text: str = Field(description="Trecho visível que sustenta a extração")
 
 
-def build_demo_report(file_names: list[str]) -> pd.DataFrame:
-    """Generate coherent fake discrepancies for the visual POC."""
-    names = file_names + ["Documento adicional"] * max(0, 3 - len(file_names))
-    return pd.DataFrame(
-        [
+class DocumentExtraction(BaseModel):
+    document_type: str = Field(description="Tipo provável do documento")
+    language: str = Field(description="Idioma predominante")
+    summary: str = Field(description="Resumo objetivo em uma frase")
+    fields: list[ExtractedField] = Field(description="Campos relevantes e legíveis encontrados")
+    warnings: list[str] = Field(default_factory=list, description="Problemas de legibilidade ou informações incertas")
+
+
+EXTRACTION_PROMPT = """
+Você é especialista em leitura de documentos empresariais. Analise somente a imagem
+fornecida e extraia todos os campos relevantes e legíveis.
+
+Regras:
+- Não invente, complete ou presuma valores.
+- Preserve cada valor exatamente como aparece no documento.
+- Use normalized_value somente para padronizar datas, números e valores.
+- Se um texto estiver ilegível, não o inclua e registre o problema em warnings.
+- Inclua identificadores, partes, endereços, datas, moedas, valores, quantidades,
+  pesos, referências logísticas, descrições e outros campos úteis visíveis.
+- Informe uma confiança realista e uma pequena evidência visível para cada campo.
+- Responda exclusivamente no JSON definido pelo schema.
+"""
+
+
+def reset_extraction() -> None:
+    st.session_state.extraction = None
+    st.session_state.analyzed_signature = None
+
+
+def get_api_key() -> str | None:
+    try:
+        return st.secrets.get("GEMINI_API_KEY")
+    except (FileNotFoundError, KeyError):
+        return None
+
+
+def analyze_image(image_bytes: bytes, mime_type: str, api_key: str) -> DocumentExtraction:
+    client = genai.Client(api_key=api_key)
+    interaction = client.interactions.create(
+        model=MODEL_ID,
+        input=[
+            {"type": "text", "text": EXTRACTION_PROMPT},
             {
-                "Severidade": "Alta",
-                "Campo": "Valor total",
-                "Documento de referência": names[0],
-                "Valor de referência": "R$ 248.750,00",
-                "Documento divergente": names[1],
-                "Valor divergente": "R$ 247.850,00",
-                "Diferença": "R$ 900,00",
+                "type": "image",
+                "data": base64.b64encode(image_bytes).decode("utf-8"),
+                "mime_type": mime_type,
             },
-            {
-                "Severidade": "Alta",
-                "Campo": "CNPJ do fornecedor",
-                "Documento de referência": names[0],
-                "Valor de referência": "12.345.678/0001-90",
-                "Documento divergente": names[1],
-                "Valor divergente": "12.345.678/0001-09",
-                "Diferença": "Dígitos finais",
-            },
-            {
-                "Severidade": "Média",
-                "Campo": "Quantidade de volumes",
-                "Documento de referência": names[0],
-                "Valor de referência": "120 volumes",
-                "Documento divergente": names[2],
-                "Valor divergente": "118 volumes",
-                "Diferença": "2 volumes",
-            },
-            {
-                "Severidade": "Média",
-                "Campo": "Data de embarque",
-                "Documento de referência": names[0],
-                "Valor de referência": "12/08/2026",
-                "Documento divergente": names[1],
-                "Valor divergente": "13/08/2026",
-                "Diferença": "1 dia",
-            },
-            {
-                "Severidade": "Baixa",
-                "Campo": "Descrição da mercadoria",
-                "Documento de referência": names[0],
-                "Valor de referência": "Camiseta 100% algodão",
-                "Documento divergente": names[2],
-                "Valor divergente": "Camiseta de algodão",
-                "Diferença": "Variação textual",
-            },
-        ]
+        ],
+        response_format={
+            "type": "text",
+            "mime_type": "application/json",
+            "schema": DocumentExtraction.model_json_schema(),
+        },
     )
+    return DocumentExtraction.model_validate_json(interaction.output_text)
 
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-if "report_ready" not in st.session_state:
-    st.session_state.report_ready = False
-if "upload_signature" not in st.session_state:
-    st.session_state.upload_signature = ()
+if "extraction" not in st.session_state:
+    st.session_state.extraction = None
+if "analyzed_signature" not in st.session_state:
+    st.session_state.analyzed_signature = None
 
 
 @st.dialog("Acessar o DocCheck", width="small", dismissible=False)
 def login_dialog() -> None:
-    st.caption("POC • Ambiente de demonstração")
+    st.caption("POC • Extração de campos com IA")
     with st.form("login_form"):
         user = st.text_input("Usuário ou e-mail", placeholder="nome@empresa.com")
         password = st.text_input("Senha", type="password", placeholder="••••••••")
@@ -119,126 +120,109 @@ def login_dialog() -> None:
 if not st.session_state.authenticated:
     login_dialog()
     st.markdown('<div class="brand">DOCCHECK</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-title">Compare documentos.<br>Encontre diferenças.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-copy">Uma experiência simples para validar informações em vários documentos e destacar o que precisa de atenção.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">Transforme documentos<br>em dados estruturados.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-copy">Envie a imagem de um documento e valide os campos identificados pela inteligência artificial.</div>', unsafe_allow_html=True)
     st.stop()
 
 
 top_left, top_right = st.columns([5, 1])
 with top_left:
-    st.markdown('<div class="brand">DOCCHECK • POC</div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand">DOCCHECK • EXTRACTION POC</div>', unsafe_allow_html=True)
 with top_right:
     if st.button("Sair", use_container_width=True):
         st.session_state.clear()
         st.rerun()
 
-st.markdown('<div class="hero-title">Comparação de documentos</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">Extração de campos</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="hero-copy">Envie os arquivos da mesma operação. O DocCheck confronta os campos equivalentes e organiza as divergências para sua revisão.</div>',
+    '<div class="hero-copy">Carregue a imagem de um documento. O Gemini identifica seu tipo e transforma as informações visíveis em campos estruturados.</div>',
     unsafe_allow_html=True,
 )
+st.info("POC para documentos fictícios ou sem informações confidenciais. A camada gratuita do Gemini pode usar o conteúdo enviado para melhoria dos produtos.", icon="🧪")
 
-st.info("Esta é uma POC: os documentos enviados não são lidos e o relatório abaixo usa dados fictícios coerentes para demonstrar o fluxo.", icon="🧪")
+api_key = get_api_key()
+if not api_key:
+    st.warning("A chave do Gemini ainda não foi configurada. Adicione GEMINI_API_KEY nos Secrets do aplicativo no Streamlit Cloud.", icon="🔑")
 
-st.markdown('### <span class="step">1</span> Carregue os documentos', unsafe_allow_html=True)
-uploaded_files = st.file_uploader(
-    "Arraste os arquivos para esta área ou clique para selecionar",
-    type=["pdf", "docx", "xlsx", "csv", "txt", "png", "jpg", "jpeg"],
-    accept_multiple_files=True,
-    help="Envie pelo menos dois documentos. Nesta POC, somente nomes e tamanhos são usados.",
-    on_change=reset_report,
-    label_visibility="visible",
+st.markdown('### <span class="step">1</span> Envie a imagem do documento', unsafe_allow_html=True)
+uploaded_image = st.file_uploader(
+    "Selecione uma imagem nítida e completa",
+    type=["png", "jpg", "jpeg", "webp"],
+    help="Formatos aceitos: PNG, JPG, JPEG e WEBP. Limite recomendado: até 20 MB.",
+    on_change=reset_extraction,
 )
 
-signature = tuple((f.name, f.size) for f in uploaded_files)
-if signature and signature != st.session_state.upload_signature:
-    with st.spinner("Recebendo e preparando os documentos…"):
-        time.sleep(2)
-    st.session_state.upload_signature = signature
+if uploaded_image:
+    image_bytes = uploaded_image.getvalue()
+    mime_type = uploaded_image.type or "image/jpeg"
+    signature = (uploaded_image.name, uploaded_image.size)
+    preview_col, action_col = st.columns([1.15, 1], gap="large")
 
-if uploaded_files:
-    st.success(f"{len(uploaded_files)} documento(s) carregado(s) com sucesso.", icon="✅")
-    cols = st.columns(min(len(uploaded_files), 3))
-    for index, file in enumerate(uploaded_files):
-        with cols[index % len(cols)]:
-            size = f"{file.size / 1024:.1f} KB" if file.size < 1024 * 1024 else f"{file.size / (1024 * 1024):.1f} MB"
-            st.markdown(
-                f'<div class="soft-card"><div class="doc-name">📄 {file.name}</div><div class="muted">{size} • pronto</div></div>',
-                unsafe_allow_html=True,
-            )
+    with preview_col:
+        st.image(image_bytes, caption=uploaded_image.name, use_container_width=True)
 
-st.write("")
-st.markdown('### <span class="step">2</span> Inicie a comparação', unsafe_allow_html=True)
-can_compare = len(uploaded_files) >= 2
-if not can_compare:
-    st.caption("Carregue pelo menos 2 documentos para liberar a comparação.")
+    with action_col:
+        st.markdown('### <span class="step">2</span> Extraia os campos', unsafe_allow_html=True)
+        st.write("A IA analisará somente as informações visíveis e retornará dados estruturados.")
+        st.caption(f"Modelo: {MODEL_ID}")
+        if st.button("✨ Analisar documento", type="primary", use_container_width=True, disabled=not bool(api_key)):
+            try:
+                with st.status("Analisando o documento…", expanded=True) as status:
+                    st.write("🔍 Identificando o tipo de documento")
+                    st.write("🧾 Localizando campos e valores")
+                    extraction = analyze_image(image_bytes, mime_type, api_key)
+                    st.write("✅ Validando a estrutura do resultado")
+                    st.session_state.extraction = extraction.model_dump()
+                    st.session_state.analyzed_signature = signature
+                    status.update(label="Extração concluída", state="complete", expanded=False)
+                st.rerun()
+            except Exception as exc:
+                error_text = str(exc)
+                if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text:
+                    st.error("A cota gratuita do Gemini foi atingida. Aguarde a renovação e tente novamente.")
+                elif "API_KEY" in error_text.upper() or "401" in error_text or "403" in error_text:
+                    st.error("A chave do Gemini não foi aceita. Verifique o Secret GEMINI_API_KEY.")
+                else:
+                    st.error(f"Não foi possível analisar o documento: {error_text}")
 
-if st.button(
-    "✨ Iniciar comparação",
-    type="primary",
-    use_container_width=True,
-    disabled=not can_compare,
-):
-    progress = st.progress(0, text="Mapeando campos equivalentes…")
-    stages = [
-        (18, "Identificando os tipos de documento…"),
-        (38, "Mapeando campos equivalentes…"),
-        (62, "Conferindo valores e datas…"),
-        (84, "Classificando divergências…"),
-        (100, "Finalizando o relatório…"),
-    ]
-    for value, label in stages:
-        time.sleep(1)
-        progress.progress(value, text=f"🔍 {label}")
-    progress.empty()
-    st.session_state.report_ready = True
-    st.toast("Comparação concluída!", icon="✅")
+    if st.session_state.extraction and st.session_state.analyzed_signature == signature:
+        result = DocumentExtraction.model_validate(st.session_state.extraction)
+        st.divider()
+        st.markdown('### <span class="step">3</span> Campos extraídos', unsafe_allow_html=True)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Tipo de documento", result.document_type)
+        m2.metric("Idioma", result.language)
+        m3.metric("Campos encontrados", len(result.fields))
+        st.write(f"**Resumo:** {result.summary}")
 
-if st.session_state.report_ready and can_compare:
-    report = build_demo_report([f.name for f in uploaded_files])
-    st.divider()
-    st.markdown('### <span class="step">3</span> Relatório de divergências', unsafe_allow_html=True)
-    st.caption("Resultado simulado para validação da experiência do usuário.")
+        rows = [{
+            "Campo": field.field_name,
+            "Valor extraído": field.value,
+            "Valor normalizado": field.normalized_value or "—",
+            "Categoria": field.category,
+            "Confiança": f"{field.confidence}%",
+            "Evidência": field.source_text,
+        } for field in result.fields]
+        dataframe = pd.DataFrame(rows)
+        tab_fields, tab_json, tab_warnings = st.tabs(["Campos", "JSON", "Alertas"])
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Documentos", len(uploaded_files))
-    m2.metric("Campos comparados", 14)
-    m3.metric("Divergências", len(report), delta="Requer revisão", delta_color="inverse")
-    m4.metric("Campos consistentes", 9)
+        with tab_fields:
+            st.dataframe(dataframe, use_container_width=True, hide_index=True)
+            st.download_button("⬇️ Baixar campos em CSV", data=dataframe.to_csv(index=False, sep=";").encode("utf-8-sig"), file_name="campos_extraidos.csv", mime="text/csv", use_container_width=True)
+        with tab_json:
+            json_text = json.dumps(result.model_dump(), ensure_ascii=False, indent=2)
+            st.code(json_text, language="json")
+            st.download_button("⬇️ Baixar resultado em JSON", data=json_text.encode("utf-8"), file_name="extracao_documento.json", mime="application/json", use_container_width=True)
+        with tab_warnings:
+            if result.warnings:
+                for warning in result.warnings:
+                    st.warning(warning)
+            else:
+                st.success("Nenhum alerta de legibilidade informado pelo modelo.", icon="✅")
 
-    st.write("")
-    tab_summary, tab_details, tab_docs = st.tabs(["Visão geral", "Todas as divergências", "Documentos"])
+        if st.button("Analisar outra imagem", use_container_width=True):
+            reset_extraction()
+            st.rerun()
+else:
+    st.caption("Nenhuma imagem enviada.")
 
-    with tab_summary:
-        st.error("2 divergências de alta prioridade precisam ser verificadas.", icon="⚠️")
-        for _, row in report.iterrows():
-            icon = {"Alta": "🔴", "Média": "🟠", "Baixa": "🟡"}[row["Severidade"]]
-            with st.expander(f'{icon} {row["Campo"]}  ·  {row["Severidade"]}'):
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.caption(row["Documento de referência"])
-                    st.code(row["Valor de referência"], language=None)
-                with c2:
-                    st.caption(row["Documento divergente"])
-                    st.code(row["Valor divergente"], language=None)
-                st.write(f'**Diferença identificada:** {row["Diferença"]}')
-
-    with tab_details:
-        st.dataframe(report, use_container_width=True, hide_index=True)
-        csv_buffer = io.StringIO()
-        report.to_csv(csv_buffer, index=False, sep=";", encoding="utf-8-sig")
-        st.download_button(
-            "⬇️ Baixar relatório em CSV",
-            data=csv_buffer.getvalue().encode("utf-8-sig"),
-            file_name="relatorio_divergencias_demo.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-
-    with tab_docs:
-        for file in uploaded_files:
-            st.write(f"✓ **{file.name}** — incluído na comparação simulada")
-
-    if st.button("Fazer nova comparação", use_container_width=True):
-        st.session_state.report_ready = False
-        st.rerun()
