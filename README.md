@@ -1,26 +1,35 @@
-# DocCheck — POC em Streamlit
+# DocCheck — POC de extração de campos
 
-Protótipo para validar o fluxo de comparação de vários documentos e apresentação de divergências.
+Protótipo em Streamlit para validar a extração de campos de documentos em imagem usando o Gemini 3.7 Flash.
 
-## O que esta versão faz
+## Fluxo
 
-- Login em modal; qualquer usuário e senha não vazios são aceitos.
-- Upload múltiplo de PDF, Word, Excel, CSV, TXT e imagens.
-- Simulação de preparação por 2 segundos.
-- Simulação de comparação por 5 segundos, com mensagens de progresso.
-- Relatório fictício coerente, métricas, níveis de severidade e download em CSV.
+- Login demonstrativo: qualquer usuário e senha não vazios.
+- Upload de uma imagem PNG, JPG, JPEG ou WEBP.
+- Envio da imagem ao Gemini 3.7 Flash.
+- Retorno com tipo do documento, idioma, resumo, campos, valores, confiança e evidência.
+- Visualização em tabela e download em CSV ou JSON.
 
-> A POC não lê nem interpreta o conteúdo dos arquivos. Os resultados são simulados e isso é informado na interface.
+## Configuração da chave
 
-## Como executar
+Crie uma chave no Google AI Studio e configure no Streamlit Cloud em **App settings → Secrets**:
+
+```toml
+GEMINI_API_KEY = "sua-chave-aqui"
+```
+
+Nunca salve a chave diretamente no código ou no GitHub.
+
+## Execução local
 
 ```bash
 python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-O Streamlit abrirá o endereço local, geralmente `http://localhost:8501`.
+Para desenvolvimento local, crie `.streamlit/secrets.toml` com a mesma variável. Esse arquivo não deve ser publicado.
 
-## Próxima versão sugerida
+## Privacidade
 
-Adicionar extração real de texto e tabelas, normalização dos campos e comparação assistida por IA, mantendo validações determinísticas para CNPJ, datas, moedas, quantidades e números de documento.
+Use apenas documentos fictícios ou sem informações confidenciais. A camada gratuita do Gemini pode usar o conteúdo enviado para melhoria dos produtos do Google.
+
