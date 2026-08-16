@@ -38,7 +38,10 @@ def extract(data,mime,doc,key):
 def norm(v):
     if not v:return ""
     v=unicodedata.normalize("NFKD",v).encode("ascii","ignore").decode().lower()
-    return re.sub(r"[^a-z0-9.|]","",v.replace(",","."))
+    # Evita falsos positivos entre 1,000.00 / 1000.00 e diferenças de espaços/caixa.
+    v=re.sub(r"(?<=\d),(?=\d{3}(?:\D|$))","",v)
+    v=v.replace(",",".")
+    return re.sub(r"[^a-z0-9.|]","",v)
 def signature(files):
     h=hashlib.sha256()
     for k in DOCS:h.update(files[k].getvalue())
@@ -52,7 +55,7 @@ def compare(raw):
     for k,docs in groups.items():
         shown={};vals={};conf=[]
         for dk in DOCS:
-            fs=docs.get(dk,[]);shown[dk]=" | ".join(f.value for f in fs) or "—";vals[dk]=tuple(norm(f.normalized_value or f.value) for f in fs);conf += [f.confidence for f in fs]
+            fs=docs.get(dk,[]);shown[dk]=" | ".join(f.value for f in fs) or "—";vals[dk]=tuple(sorted(norm(f.normalized_value or f.value) for f in fs));conf += [f.confidence for f in fs]
         present=[v for v in vals.values() if v]
         status="Somente informativo" if len(present)<2 else ("Consistente" if len(set(present))==1 else "Divergente")
         rows.append({"Prioritário":"Sim" if priorities[k] else "Não","Campo":labels[k],"Commercial Invoice":shown["invoice"],"Packing List":shown["packing"],"Bill of Lading":shown["bl"],"Status":status,"Confiança mínima":f"{min(conf)}%"})
@@ -95,7 +98,10 @@ if st.button("Iniciar comparação",type="primary",use_container_width=True,disa
 if ready and st.session_state.results and signature(files)==st.session_state.sig:
     raw=st.session_state.results;report=compare(raw);div=report[report.Status=="Divergente"]
     st.divider();a,b,c,d=st.columns(4);a.metric("Documentos",3);b.metric("Campos",len(report));c.metric("Divergências",len(div));d.metric("Prioritárias",len(div[div["Prioritário"]=="Sim"]))
-    st.success("Nenhuma divergência encontrada.") if div.empty else st.error(f"{len(div)} divergência(s) encontrada(s). Revise antes de prosseguir.")
+    if div.empty:
+        st.success("Nenhuma divergência encontrada.")
+    else:
+        st.error(f"{len(div)} divergência(s) encontrada(s). Revise antes de prosseguir.")
     t1,t2,t3,t4=st.tabs(["Relatório","Conferência manual","JSON","Alertas"])
     with t1:
         only=st.toggle("Somente prioritários",True);view=report[report["Prioritário"]=="Sim"] if only else report;st.dataframe(view,use_container_width=True,hide_index=True);st.download_button("Baixar CSV",report.to_csv(index=False,sep=";").encode("utf-8-sig"),"relatorio.csv","text/csv",use_container_width=True)
@@ -110,4 +116,8 @@ if ready and st.session_state.results and signature(files)==st.session_state.sig
         alerts=[]
         for dk,label in DOCS.items():
             r=Extraction.model_validate(raw[dk]);alerts += [f"{label}: {w}" for w in r.warnings];alerts += [f"{label}: baixa confiança em {f.field_name} ({f.confidence}%)." for f in r.fields if f.confidence<75]
-        [st.warning(x) for x in alerts] if alerts else st.success("Nenhum alerta informado.")
+        if alerts:
+            for alert in alerts:
+                st.warning(alert)
+        else:
+            st.success("Nenhum alerta informado.")
